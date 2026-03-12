@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --primary: 199 89% 48%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 39 100% 94%;
+  --secondary-foreground: 24 10% 10%;
+  --muted: 214 32% 91%;
+  --muted-foreground: 215 16% 40%;
+  --accent: 160 84% 39%;
+  --accent-foreground: 210 40% 98%;
+  --border: 214 32% 86%;
+  --input: 214 32% 92%;
+  --ring: 199 89% 48%;
+}
+
+* {
+  @apply border-border;
+}
+
+body {
+  @apply min-h-screen bg-slate-50 text-slate-900 antialiased;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-image:
+    radial-gradient(circle at top left, rgba(14, 165, 233, 0.16), transparent 28%),
+    radial-gradient(circle at right, rgba(16, 185, 129, 0.12), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 1));
+}
+
+#root {
+  @apply min-h-screen;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-slate-300;
+}
+
+.glass {
+  @apply border border-white/60 bg-white/75 backdrop-blur-xl;
+}
