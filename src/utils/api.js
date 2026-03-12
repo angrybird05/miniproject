@@ -1,4 +1,6 @@
-const RAW_API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8080";
+// Use relative path in production so it targets the same domain serving the site (Render/Heroku/etc)
+// Fallback to localhost during local Vite dev server
+const RAW_API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://127.0.0.1:8080" : "");
 
 function normalizeBaseUrl(value) {
   if (!value) return "";
