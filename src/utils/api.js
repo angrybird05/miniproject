@@ -74,4 +74,7 @@ export const api = {
   markAttendance: (token, payload) => apiRequest("/api/attendance/mark", { method: "POST", token, body: payload }),
   performance: (token) => apiRequest("/api/performance", { token }),
   analytics: (token) => apiRequest("/api/analytics", { token }),
+  updateEmail: (token, email) => apiRequest("/api/me/email", { method: "PATCH", token, body: { email } }),
+  updatePassword: (token, { currentPassword, newPassword }) =>
+    apiRequest("/api/me/password", { method: "PATCH", token, body: { currentPassword, newPassword } }),
 };

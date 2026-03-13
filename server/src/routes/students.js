@@ -28,7 +28,10 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage });
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 1 * 1024 * 1024 } // 1MB limit
+});
 
 const StudentSchema = z.object({
   name: z.string().min(1),
@@ -131,7 +134,19 @@ studentsRouter.post("/:studentId/reset-password", async (req, res) => {
   return jsonOk(res, { studentUser });
 });
 
-studentsRouter.post("/", upload.single("faceImage"), async (req, res) => {
+studentsRouter.post("/", (req, res, next) => {
+  upload.single("faceImage")(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === "LIMIT_FILE_SIZE") {
+        return jsonError(res, 400, "Image too large. Maximum size is 1MB.");
+      }
+      return jsonError(res, 400, err.message);
+    } else if (err) {
+      return jsonError(res, 500, "Upload error", err.message);
+    }
+    next();
+  });
+}, async (req, res) => {
   const parsed = StudentSchema.safeParse({
     name: req.body.name,
     studentId: req.body.studentId,

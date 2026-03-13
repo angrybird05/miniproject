@@ -64,6 +64,9 @@ export default function AttendanceCameraPage() {
 
   const [cameraStarted, setCameraStarted] = useState(false);
   const [cameraError, setCameraError] = useState("");
+  const [availableDevices, setAvailableDevices] = useState([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState("");
+  const [facingMode, setFacingMode] = useState("user"); // user | environment
 
   const [recognized, setRecognized] = useState([]);
   const [matcherReady, setMatcherReady] = useState(false);
@@ -110,8 +113,23 @@ export default function AttendanceCameraPage() {
     if (!token) return;
     fetchClasses();
     fetchRoster();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    // Check for available cameras
+    if (navigator.mediaDevices?.enumerateDevices) {
+      navigator.mediaDevices.enumerateDevices().then((devices) => {
+        const videoDevices = devices.filter((d) => d.kind === "videoinput");
+        setAvailableDevices(videoDevices);
+      });
+    }
   }, [token]);
+
+  // Auto-start camera after models and roster are ready
+  useEffect(() => {
+    if (modelsStatus === "ready" && roster.length > 0 && classCode && !cameraStarted && !cameraError) {
+      startCamera();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modelsStatus, roster.length, classCode]);
 
   useEffect(() => {
     const preferred = String(searchParams.get("class") || "").trim();
@@ -224,12 +242,7 @@ export default function AttendanceCameraPage() {
     if (!ok) return;
 
     if (streamRef.current) {
-      if (videoRef.current && videoRef.current.srcObject !== streamRef.current) {
-        videoRef.current.srcObject = streamRef.current;
-        videoRef.current.play().catch(() => {});
-      }
-      setCameraStarted(true);
-      return;
+      stopCamera();
     }
 
     try {
@@ -242,54 +255,20 @@ export default function AttendanceCameraPage() {
         return;
       }
 
-      if (!window.isSecureContext) {
-        const message = "Camera requires a secure context. Use http://localhost:5173 or enable HTTPS.";
-        setCameraError(message);
-        toast({ title: "Insecure context", description: message });
-        return;
-      }
+      const constraints = {
+        video: selectedDeviceId
+          ? { deviceId: { exact: selectedDeviceId } }
+          : {
+              facingMode,
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+        audio: false,
+      };
 
-      if (navigator.permissions?.query) {
-        try {
-          // @ts-ignore
-          const perm = await navigator.permissions.query({ name: "camera" });
-          if (perm?.state === "denied") {
-            const message = "Camera permission is blocked. Enable it in your browser site settings, then retry.";
-            setCameraError(message);
-            toast({ title: "Permission blocked", description: message });
-            return;
-          }
-        } catch {
-          // ignore
-        }
-      }
-
-      const candidates = [
-        {
-          video: {
-            facingMode: "user",
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-          },
-          audio: false,
-        },
-        { video: true, audio: false },
-      ];
-
-      let stream = null;
-      let lastErr = null;
-      for (const c of candidates) {
-        try {
-          // eslint-disable-next-line no-await-in-loop
-          stream = await navigator.mediaDevices.getUserMedia(c);
-          break;
-        } catch (e) {
-          lastErr = e;
-        }
-      }
-      if (!stream) throw lastErr || new Error("Unable to access camera.");
-
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
@@ -302,6 +281,15 @@ export default function AttendanceCameraPage() {
           : e?.message || "Failed to start camera.";
       setCameraError(message);
       toast({ title: "Camera error", description: message });
+    }
+  };
+
+  const toggleFacingMode = () => {
+    const next = facingMode === "user" ? "environment" : "user";
+    setFacingMode(next);
+    setSelectedDeviceId(""); // Clear specific device if toggling mode
+    if (cameraStarted) {
+      setTimeout(() => startCamera(), 100);
     }
   };
 
@@ -478,8 +466,14 @@ export default function AttendanceCameraPage() {
             <div className="flex flex-wrap gap-3">
               <Button onClick={startCamera} disabled={modelsStatus === "loading" || classes.length === 0}>
                 <PlayCircle className="h-4 w-4" />
-                {modelsStatus === "loading" ? "Loading models..." : cameraStarted ? "Camera On" : "Start Camera"}
+                {modelsStatus === "loading" ? "Loading models..." : cameraStarted ? "Restart Camera" : "Start Camera"}
               </Button>
+              {availableDevices.length > 1 && (
+                <Button variant="outline" onClick={toggleFacingMode}>
+                  <RefreshCcw className="h-4 w-4" />
+                  Flip Camera ({facingMode === "user" ? "Front" : "Back"})
+                </Button>
+              )}
               <Button variant="outline" onClick={stopCamera} disabled={!cameraStarted || submitting}>
                 <StopCircle className="h-4 w-4" />
                 Stop Camera

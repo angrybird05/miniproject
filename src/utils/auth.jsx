@@ -56,8 +56,13 @@ export function AuthProvider({ children }) {
         setAuth({ token: null, user: null });
         clearStoredAuth();
       },
+      updateUser(nextUser) {
+        const next = { ...auth, user: { ...auth.user, ...nextUser } };
+        setAuth(next);
+        writeStoredAuth(next);
+      },
     };
-  }, [token, user]);
+  }, [auth, token, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

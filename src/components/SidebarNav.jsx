@@ -1,4 +1,4 @@
-import { BarChart3, BookOpen, CalendarDays, Camera, ClipboardCheck, LayoutDashboard, UserPlus2, Users } from "lucide-react";
+import { BarChart3, BookOpen, CalendarDays, Camera, ClipboardCheck, LayoutDashboard, UserPlus2, Users, Settings } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import { useAuth } from "@/utils/auth";
@@ -18,11 +18,13 @@ export default function SidebarNav({ mobile = false }) {
         { to: "/records", label: "Attendance Records", icon: CalendarDays },
         { to: "/performance", label: "Student Performance", icon: Users },
         { to: "/analytics", label: "Analytics", icon: BarChart3 },
+        { to: "/profile", label: "Settings", icon: Settings },
       ]
     : [
         { to: "/", label: "Home", icon: LayoutDashboard },
         { to: "/records", label: "My Attendance", icon: CalendarDays },
         { to: "/performance", label: "My Performance", icon: Users },
+        { to: "/profile", label: "Settings", icon: Settings },
       ];
 
   return (

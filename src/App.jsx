@@ -11,6 +11,7 @@ import PerformancePage from "@/pages/Performance";
 import AnalyticsPage from "@/pages/Analytics";
 import ClassesPage from "@/pages/Classes";
 import StudentsPage from "@/pages/Students";
+import ProfilePage from "@/pages/Profile";
 import NotFoundPage from "@/pages/NotFound";
 import { useAuth } from "@/utils/auth";
 import RequireRole from "@/components/RequireRole";
@@ -53,6 +54,7 @@ export default function App() {
 
         <Route path="/records" element={<RecordsPage />} />
         <Route path="/performance" element={<PerformancePage />} />
+        <Route path="/profile" element={<ProfilePage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

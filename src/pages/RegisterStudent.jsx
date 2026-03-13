@@ -219,6 +219,15 @@ export default function RegisterStudentPage() {
                 accept="image/*"
                 onChange={(event) => {
                   const file = event.target.files?.[0] || null;
+                  
+                  if (file && file.size > 1 * 1024 * 1024) {
+                    setFaceError("Image too large. Please upload an image smaller than 1MB.");
+                    setFaceStatus("error");
+                    setValues((current) => ({ ...current, faceImageFile: null }));
+                    event.target.value = ""; // Clear input
+                    return;
+                  }
+
                   setValues((current) => ({ ...current, faceImageFile: file }));
                   latestFileRef.current = file;
                   setFaceDescriptor(null);

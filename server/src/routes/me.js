@@ -1,6 +1,8 @@
 import express from "express";
 import { getDb } from "../db.js";
 import { jsonError, jsonOk } from "../http.js";
+import bcrypt from "bcryptjs";
+import { z } from "zod";
 
 export const meRouter = express.Router();
 
@@ -51,4 +53,73 @@ meRouter.get("/summary", async (req, res) => {
     attendanceBreakdown,
   });
 });
+
+const UpdateEmailSchema = z.object({
+  email: z.string().email(),
+});
+
+meRouter.patch("/email", async (req, res) => {
+  const parsed = UpdateEmailSchema.safeParse(req.body);
+  if (!parsed.success) return jsonError(res, 400, "Invalid email", parsed.error.flatten());
+
+  const { email } = parsed.data;
+  const userId = req.user.sub;
+  const studentRef = req.user.studentRef;
+
+  const { db, persist } = await getDb();
+
+  try {
+    // Check if email is already taken by another user
+    const existingRows = db.exec("SELECT id FROM users WHERE email = ? AND id != ?", [email, userId]);
+    if (existingRows.length > 0 && existingRows[0].values.length > 0) {
+      return jsonError(res, 409, "Email already in use");
+    }
+
+    db.run("BEGIN TRANSACTION");
+    db.run("UPDATE users SET email = ? WHERE id = ?", [email, userId]);
+    if (studentRef) {
+      db.run("UPDATE students SET email = ? WHERE id = ?", [email, studentRef]);
+    }
+    db.run("COMMIT");
+    persist();
+    return jsonOk(res, { message: "Email updated successfully" });
+  } catch (e) {
+    try {
+      db.run("ROLLBACK");
+    } catch (err) {
+      // ignore
+    }
+    return jsonError(res, 500, "Failed to update email", e.message);
+  }
+});
+
+const UpdatePasswordSchema = z.object({
+  currentPassword: z.string(),
+  newPassword: z.string().min(6),
+});
+
+meRouter.patch("/password", async (req, res) => {
+  const parsed = UpdatePasswordSchema.safeParse(req.body);
+  if (!parsed.success) return jsonError(res, 400, "Invalid request", parsed.error.flatten());
+
+  const { currentPassword, newPassword } = parsed.data;
+  const userId = req.user.sub;
+
+  const { db, persist } = await getDb();
+  const rows = db.exec("SELECT password_hash FROM users WHERE id = ?", [userId]);
+  if (!rows.length || !rows[0].values.length) {
+    return jsonError(res, 404, "User not found");
+  }
+
+  const passwordHash = rows[0].values[0][0];
+  if (!bcrypt.compareSync(currentPassword, passwordHash)) {
+    return jsonError(res, 401, "Current password incorrect");
+  }
+
+  const newHash = bcrypt.hashSync(newPassword, 10);
+  db.run("UPDATE users SET password_hash = ? WHERE id = ?", [newHash, userId]);
+  persist();
+  return jsonOk(res, { message: "Password updated successfully" });
+});
+
 

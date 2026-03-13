@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import { api } from "@/utils/api";
 import { useAuth } from "@/utils/auth";
 
@@ -83,12 +85,19 @@ export default function StudentDashboardPage() {
 
       <Card className="border-0">
         <CardContent className="p-6">
-          <p className="text-sm text-slate-500">Profile</p>
-          <p className="mt-2 text-lg font-semibold text-slate-900">{summary?.name || user?.name || "Student"}</p>
-          <p className="text-sm text-slate-500">
-            {summary?.studentId ? `Student ID: ${summary.studentId}` : null}
-            {summary?.department ? ` · ${summary.department}` : null}
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-500">Profile</p>
+              <p className="mt-2 text-lg font-semibold text-slate-900">{summary?.name || user?.name || "Student"}</p>
+              <p className="text-sm text-slate-500">
+                {summary?.studentId ? `Student ID: ${summary.studentId}` : null}
+                {summary?.department ? ` · ${summary.department}` : null}
+              </p>
+            </div>
+            <Button variant="outline" asChild>
+              <Link to="/profile">Manage Profile</Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
