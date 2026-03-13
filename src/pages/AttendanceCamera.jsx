@@ -42,6 +42,7 @@ export default function AttendanceCameraPage() {
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const startingRef = useRef(false);
   const scanRunningRef = useRef(false);
   const matcherRef = useRef(null);
 
@@ -238,14 +239,17 @@ export default function AttendanceCameraPage() {
   }, []);
 
   const startCamera = async () => {
-    const ok = await ensureModels();
-    if (!ok) return;
-
-    if (streamRef.current) {
-      stopCamera();
-    }
+    if (startingRef.current) return;
+    startingRef.current = true;
 
     try {
+      const ok = await ensureModels();
+      if (!ok) return;
+
+      if (streamRef.current) {
+        stopCamera();
+      }
+
       setCameraError("");
       const hasUserMedia = !!navigator.mediaDevices?.getUserMedia;
       if (!hasUserMedia) {
@@ -271,7 +275,17 @@ export default function AttendanceCameraPage() {
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+        try {
+          // Wrap play in a try-catch to handle the "interrupted by new load" error
+          await videoRef.current.play();
+        } catch (e) {
+          if (e.name === "AbortError" || e.name === "NotAllowedError") {
+            // Silence these specific errors as they are often benign race conditions
+            console.log("Camera play() was interrupted or aborted:", e.name);
+          } else {
+            throw e;
+          }
+        }
       }
       setCameraStarted(true);
     } catch (e) {
@@ -281,6 +295,8 @@ export default function AttendanceCameraPage() {
           : e?.message || "Failed to start camera.";
       setCameraError(message);
       toast({ title: "Camera error", description: message });
+    } finally {
+      startingRef.current = false;
     }
   };
 
@@ -449,7 +465,7 @@ export default function AttendanceCameraPage() {
             </div>
 
             <div className="relative aspect-video overflow-hidden rounded-3xl border border-slate-200 bg-slate-950">
-              <video ref={videoRef} className="h-full w-full object-cover" muted playsInline autoPlay />
+              <video ref={videoRef} className="h-full w-full object-cover" muted playsInline />
               {!cameraStarted ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-sky-900 text-white">
                   <div className="text-center">
